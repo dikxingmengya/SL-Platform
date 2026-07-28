@@ -80,7 +80,7 @@
         </el-form-item>
         <el-form-item label="角色" prop="role">
           <el-select v-model="form.role" style="width: 100%">
-            <el-option v-if="userStore.userInfo?.is_super_admin" label="管理员" value="admin" />
+            <el-option label="管理员" value="admin" />
             <el-option label="教师" value="teacher" />
             <el-option label="家长" value="parent" />
           </el-select>
