@@ -165,9 +165,3 @@ CREATE TABLE notification (
 -- 超级管理员账号：root / root123（仅可通过服务器/数据库直接修改）
 INSERT INTO user (username, password_hash, real_name, role, is_super_admin, phone, email) VALUES
 ('root', '$2b$12$acWMpGcHUiLVc.ranQ/b0.dLsGe8WQI2ygcge0aCwLsmfxVpdnAIi', '超级管理员', 'admin', 1, '', '');
-
--- 预设课程类型
-INSERT INTO course_type (name, description, default_hourly_rate) VALUES
-('数学', '中小学数学辅导', 150.00),
-('语文', '中小学语文辅导', 120.00),
-('英语', '中小学英语辅导', 130.00);
