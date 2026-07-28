@@ -119,22 +119,25 @@ async def delete_user(
     if target.is_super_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="超级管理员账号不可删除")
 
-    # 检查关联，无关联硬删除，有关联则阻止
+    # 检查关联，无关联硬删除，有关联列出详情并阻止
     from app.models.teacher_student import TeacherStudent
     refs = []
     if target.role == "teacher":
-        ts = (await db.execute(select(func.count(TeacherStudent.id)).where(TeacherStudent.teacher_id == user_id))).scalar() or 0
-        if ts: refs.append(f"{ts}个师生分配")
-        lr = (await db.execute(select(func.count(LessonRecord.id)).where(LessonRecord.teacher_id == user_id))).scalar() or 0
-        if lr: refs.append(f"{lr}条上课记录")
+        ts_rows = (await db.execute(select(TeacherStudent).where(TeacherStudent.teacher_id == user_id))).scalars().all()
+        if ts_rows:
+            names = [r.student.name for r in ts_rows if r.student]
+            refs.append(f"{len(ts_rows)}个师生分配（{', '.join(names)}）")
+        lr_count = (await db.execute(select(func.count(LessonRecord.id)).where(LessonRecord.teacher_id == user_id))).scalar() or 0
+        if lr_count: refs.append(f"{lr_count}条上课记录")
     if target.role == "parent":
-        sc = (await db.execute(select(func.count(Student.id)).where(Student.parent_user_id == user_id))).scalar() or 0
-        if sc: refs.append(f"{sc}个孩子档案")
+        sc_rows = (await db.execute(select(Student).where(Student.parent_user_id == user_id))).scalars().all()
+        if sc_rows:
+            names = [s.name for s in sc_rows]
+            refs.append(f"{len(sc_rows)}个孩子（{', '.join(names)}）")
         pk = (await db.execute(select(func.count(Package.id)).where(Package.parent_user_id == user_id))).scalar() or 0
         if pk: refs.append(f"{pk}个课时包")
     if refs:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"无法删除：关联了{'、'.join(refs)}，请先解除")
-    # 无关联 → 硬删除
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"禁止删除：{'；'.join(refs)}")
     await db.execute(sqla_delete(User).where(User.id == user_id))
     await db.commit()
     return success(msg="已删除")
@@ -188,16 +191,17 @@ async def delete_student(
     student_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    """删除学生：无关联硬删除，有关联阻止"""
+    """删除学生：无关联硬删除，有关联列出详情并阻止"""
     from app.models.teacher_student import TeacherStudent
-    ts = (await db.execute(select(func.count(TeacherStudent.id)).where(TeacherStudent.student_id == student_id))).scalar() or 0
-    lr = (await db.execute(select(func.count(LessonRecord.id)).where(LessonRecord.student_id == student_id))).scalar() or 0
+    ts_rows = (await db.execute(select(TeacherStudent).where(TeacherStudent.student_id == student_id))).scalars().all()
+    lr_count = (await db.execute(select(func.count(LessonRecord.id)).where(LessonRecord.student_id == student_id))).scalar() or 0
     refs = []
-    if ts: refs.append(f"{ts}个师生分配")
-    if lr: refs.append(f"{lr}条上课记录")
+    if ts_rows:
+        names = [r.teacher.real_name for r in ts_rows if r.teacher]
+        refs.append(f"{len(ts_rows)}个师生分配（教师：{', '.join(names)}）")
+    if lr_count: refs.append(f"{lr_count}条上课记录")
     if refs:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"无法删除：关联了{'、'.join(refs)}，请先解除")
-    # 无关联 → 硬删除
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"禁止删除：{'；'.join(refs)}")
     await db.execute(sqla_delete(Student).where(Student.id == student_id))
     await db.commit()
     return success(msg="已删除")
@@ -291,17 +295,21 @@ async def delete_course_type(
     ct_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    """删除课程类型：无引用硬删除，有引用软删除"""
+    """删除课程类型：有引用则阻止并告知引用位置"""
     from app.models.package import Package
-    pk = (await db.execute(select(func.count(Package.id)).where(Package.course_type_id == ct_id))).scalar() or 0
-    lr = (await db.execute(select(func.count(LessonRecord.id)).where(LessonRecord.course_type_id == ct_id))).scalar() or 0
-    if pk == 0 and lr == 0:
-        await db.execute(sqla_delete(CourseType).where(CourseType.id == ct_id))
-        await db.commit()
-    else:
-        ok = await course_type_service.delete_course_type(db, ct_id)
-        if not ok:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="课程类型不存在")
+    pk_count = (await db.execute(select(func.count(Package.id)).where(Package.course_type_id == ct_id))).scalar() or 0
+    lr_count = (await db.execute(select(func.count(LessonRecord.id)).where(LessonRecord.course_type_id == ct_id))).scalar() or 0
+    refs = []
+    if pk_count:
+        pk_rows = (await db.execute(select(Package).where(Package.course_type_id == ct_id).limit(5))).scalars().all()
+        names = [f"ID#{p.id}" for p in pk_rows]
+        refs.append(f"{pk_count}个课时包（{'、'.join(names)}{'等' if pk_count > 5 else ''}）")
+    if lr_count: refs.append(f"{lr_count}条上课记录")
+    if refs:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"禁止删除：{'；'.join(refs)}")
+    await db.execute(sqla_delete(CourseType).where(CourseType.id == ct_id))
+    await db.commit()
+    return success(msg="已删除")
     return success(msg="已删除")
 
 
