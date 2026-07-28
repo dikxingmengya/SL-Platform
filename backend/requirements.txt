@@ -1,0 +1,25 @@
+# SL-Platform 家教课时管理系统 - 后端依赖
+# Python 3.10+
+
+# Web 框架
+fastapi>=0.110.0,<1.0.0
+uvicorn[standard]>=0.27.0
+
+# 数据库
+sqlalchemy[asyncio]>=2.0.25
+aiomysql>=0.2.0
+pymysql>=1.1.0
+
+# 认证与安全
+bcrypt>=4.1.0
+python-jose[cryptography]>=3.3.0
+
+# 数据验证
+pydantic>=2.5.0
+
+# Excel 导出
+openpyxl>=3.1.0
+
+# 可选：生产环境部署
+# gunicorn>=21.2.0
+# httptools>=0.6.0
