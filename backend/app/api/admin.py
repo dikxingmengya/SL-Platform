@@ -254,8 +254,8 @@ async def delete_assignment(
 async def list_course_types(
     db: AsyncSession = Depends(get_db),
 ):
-    """获取所有课程类型"""
-    types = await course_type_service.get_course_types(db)
+    """获取课程类型列表（仅显示启用的）"""
+    types = await course_type_service.get_course_types(db, active_only=True)
     ct_list = [{
         "id": t.id,
         "name": t.name,
