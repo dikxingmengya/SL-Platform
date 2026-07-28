@@ -61,75 +61,62 @@ SL-Platform/
 └── README.md
 ```
 
-## 快速开始
+## 部署指南
 
 ### 1. 环境要求
 
-- Python 3.10+
-- Node.js 18+
-- MySQL 8.0+
-- Git (可选)
+- Python 3.10+ | Node.js 18+ | MySQL 8.0+
 
 ### 2. 数据库初始化
 
 ```bash
-# 登录 MySQL，执行初始化脚本
 mysql -u root -p < backend/init_db.sql
 ```
 
-脚本将自动：
-- 创建 `sl_platform` 数据库
-- 创建 8 张业务表
-- 插入初始测试数据
+脚本创建 `sl_platform` 数据库、8 张表，仅插入**超级管理员 root/root123** + 3 个预设课程类型（数学/语文/英语），无其他冗余数据。
 
-### 3. 后端配置
+### 3. 后端
 
 ```bash
 cd backend
-
-# 安装依赖
 pip install -r requirements.txt
 
-# 修改数据库连接配置（如需）
-# 编辑 app/config.py，修改 DB_USER、DB_PASSWORD 等
-# 或通过环境变量设置：
-# export DB_HOST=127.0.0.1
-# export DB_PORT=3306
-# export DB_USER=root
-# export DB_PASSWORD=your_password
-# export DB_NAME=sl_platform
+# 环境变量（可选，默认连接本地 MySQL）
+export DB_HOST=127.0.0.1  DB_PORT=3306  DB_USER=root  DB_PASSWORD=your_pwd  DB_NAME=sl_platform
+export JWT_SECRET_KEY=your-random-secret-key
 
-# 启动后端服务
+# 开发模式
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# 生产模式（gunicorn + uvicorn workers）
+gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
 ```
 
-访问 API 文档：
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+API 文档：http://localhost:8000/docs
 
-### 4. 前端配置
+### 4. 前端
 
 ```bash
 cd frontend
+npm install
 
-# 安装依赖
+# 开发模式
+npm run dev
+
+# 生产构建
+npm run build   # 产出 dist/，部署到 Nginx
+```
+
+生产环境建议 Nginx 反向代理统一前后端端口。
+
+### 5. 首次登录
+
+浏览器打开前端地址，用 `root / root123` 登录，然后创建家长/教师账号，开始使用。
 npm install
 
 # 启动开发服务器
 npm run dev
 ```
-
-前端开发服务器运行在 http://localhost:5173，自动代理 `/api` 到后端。
-
-### 5. 登录测试
-
-打开浏览器访问 http://localhost:5173，使用以下测试账号登录：
-
-| 角色 | 用户名 | 密码 | 说明 |
-|------|--------|------|------|
-| 超级管理员 | `root` | `root123` | 全部权限，仅服务器可修改 |
-| 教师 | `teacher1` | `teacher123` | 查看学生、创建记录 |
-| 家长 | `parent1` | `parent123` | 查看孩子课时明细 |
 
 ## 核心业务流程
 

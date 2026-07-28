@@ -164,33 +164,10 @@ CREATE TABLE notification (
 
 -- 超级管理员账号：root / root123（仅可通过服务器/数据库直接修改）
 INSERT INTO user (username, password_hash, real_name, role, is_super_admin, phone, email) VALUES
-('root', '$2b$12$acWMpGcHUiLVc.ranQ/b0.dLsGe8WQI2ygcge0aCwLsmfxVpdnAIi', '超级管理员', 'admin', 1, '13800000000', 'admin@slplatform.com');
+('root', '$2b$12$acWMpGcHUiLVc.ranQ/b0.dLsGe8WQI2ygcge0aCwLsmfxVpdnAIi', '超级管理员', 'admin', 1, '', '');
 
--- 测试家长账号：parent1 / parent123
-INSERT INTO user (username, password_hash, real_name, role, phone, email) VALUES
-('parent1', '$2b$12$NcCwFfMS.zGh.oCtaXnZXOIuEHOUYgKl0bhnF8gOUJzWUcMOqy8HK', '张爸爸', 'parent', '13900001111', 'zhang@test.com');
-
--- 测试教师账号：teacher1 / teacher123
-INSERT INTO user (username, password_hash, real_name, role, phone, email) VALUES
-('teacher1', '$2b$12$6bfLPfG9a25Z4HqREdeNv.2qau5mWpvV3XaDb6zFc1KEFhnAzERaC', '李老师', 'teacher', '13900002222', 'li@test.com');
-
--- 教师扩展信息
-INSERT INTO teacher (user_id, subject, bio) VALUES
-(3, '数学,物理', '10年教学经验，擅长初高中数理化辅导');
-
--- 测试学生（关联 parent1）
-INSERT INTO student (name, parent_user_id, grade, school) VALUES
-('张晓明', 2, '初二', '北京市第一中学'),
-('张晓红', 2, '小学五年级', '北京市实验小学');
-
--- 课程类型
+-- 预设课程类型
 INSERT INTO course_type (name, description, default_hourly_rate) VALUES
 ('数学', '中小学数学辅导', 150.00),
 ('语文', '中小学语文辅导', 120.00),
 ('英语', '中小学英语辅导', 130.00);
-
--- 为测试学生购买课时包
-INSERT INTO package (parent_user_id, course_type_id, total_hours, used_hours, price, expire_date, status) VALUES
-(2, 1, 40.00, 0.00, 5000.00, '2026-12-31', 'active'),
-(2, 2, 30.00, 0.00, 3000.00, '2026-12-31', 'active'),
-(2, 3, 20.00, 0.00, 2200.00, '2026-12-31', 'active');
