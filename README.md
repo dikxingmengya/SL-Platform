@@ -112,9 +112,10 @@ npm run build   # 产出 dist/，部署到 Nginx
 ### 5. 首次登录
 
 浏览器打开前端地址，用 `root / root123` 登录，然后创建家长/教师账号，开始使用。
-npm install
 
 # 启动开发服务器
+
+```bash
 npm run dev
 ```
 
