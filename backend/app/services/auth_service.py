@@ -37,4 +37,5 @@ async def authenticate_user(
         "username": user.username,
         "real_name": user.real_name,
         "role": user.role,
+        "is_super_admin": user.is_super_admin,
     }

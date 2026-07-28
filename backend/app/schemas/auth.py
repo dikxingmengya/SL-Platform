@@ -17,6 +17,7 @@ class LoginResponse(BaseModel):
     username: str = Field(..., description="用户名")
     real_name: str = Field(..., description="真实姓名")
     role: str = Field(..., description="角色")
+    is_super_admin: bool = Field(default=False, description="是否超级管理员")
 
 
 class UserInfo(BaseModel):

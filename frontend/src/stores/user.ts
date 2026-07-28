@@ -39,6 +39,7 @@ export const useUserStore = defineStore('user', () => {
       username: data.username,
       real_name: data.real_name,
       role: data.role,
+      is_super_admin: data.is_super_admin || false,
       phone: '',
       email: '',
       is_active: true,
