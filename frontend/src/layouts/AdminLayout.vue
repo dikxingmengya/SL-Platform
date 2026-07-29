@@ -71,6 +71,9 @@ function checkMobile() {
 function onMenuSelect() { if (isMobile.value) collapsed.value = true }
 function handleLogout() { userStore.logout(); router.push('/login') }
 
+// 刷新后恢复用户信息
+userStore.fetchMe()
+
 onMounted(() => { checkMobile(); window.addEventListener('resize', checkMobile) })
 onUnmounted(() => window.removeEventListener('resize', checkMobile))
 </script>

@@ -45,6 +45,7 @@ function checkMobile() {
 }
 function onMenuSelect() { if (isMobile.value) collapsed.value = true }
 function handleLogout() { userStore.logout(); router.push('/login') }
+userStore.fetchMe()
 
 onMounted(() => { checkMobile(); window.addEventListener('resize', checkMobile) })
 onUnmounted(() => window.removeEventListener('resize', checkMobile))
