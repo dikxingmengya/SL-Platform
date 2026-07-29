@@ -380,6 +380,34 @@ async def delete_package(
 
 # ==================== 上课记录管理 ====================
 
+@router.post("/records", summary="创建上课记录", dependencies=[_admin_check])
+async def create_record_admin(
+    data: LessonRecordCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    """管理员手动添加上课记录，无需校验师生分配"""
+    # 校验学生、教师、课程类型都存在
+    student = await db.get(Student, data.student_id)
+    if not student: raise HTTPException(status_code=400, detail="学生不存在")
+    teacher = await db.get(User, data.teacher_id)
+    if not teacher or teacher.role != "teacher": raise HTTPException(status_code=400, detail="教师不存在或非教师角色")
+    ct = await db.get(CourseType, data.course_type_id) if data.course_type_id else None
+    # 通用课程允许 course_type_id=None
+    if data.course_type_id and not ct: raise HTTPException(status_code=400, detail="课程类型不存在")
+    # 时间校验
+    if data.date > datetime.now(): raise HTTPException(status_code=400, detail="上课时间不能是未来时间")
+
+    record = LessonRecord(
+        student_id=data.student_id, teacher_id=data.teacher_id,
+        course_type_id=data.course_type_id, hours=data.hours,
+        content=data.content, date=data.date, status=data.status,
+    )
+    db.add(record)
+    await db.commit()
+    await db.refresh(record)
+    return success(data={"id": record.id, "status": record.status}, msg="记录创建成功")
+
+
 @router.get("/records", summary="上课记录列表", dependencies=[_admin_check])
 async def list_records(
     page: int = Query(default=1, ge=1),

@@ -8,8 +8,9 @@ from pydantic import BaseModel, Field
 
 
 class LessonRecordCreate(BaseModel):
-    """创建上课记录请求（教师端）"""
+    """创建上课记录请求"""
     student_id: int = Field(..., gt=0, description="上课学生ID")
+    teacher_id: int = Field(default=0, gt=0, description="授课教师ID（管理员创建时指定，教师端自动取当前用户）")
     course_type_id: int = Field(..., gt=0, description="课程类型ID")
     hours: float = Field(..., gt=0, description="上课时长（小时）")
     content: str = Field(default="", description="上课内容/备注")

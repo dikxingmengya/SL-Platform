@@ -3,7 +3,10 @@
   <div class="page-container">
     <div class="page-header">
       <h3>上课记录</h3>
-      <el-button type="success" :loading="exporting" @click="handleExport">导出Excel</el-button>
+      <div>
+        <el-button type="primary" @click="openCreate">创建记录</el-button>
+        <el-button type="success" :loading="exporting" @click="handleExport">导出Excel</el-button>
+      </div>
     </div>
 
     <!-- 筛选 -->
@@ -115,6 +118,42 @@
         <el-button type="primary" :loading="saving" @click="handleEditSave">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 创建记录对话框 -->
+    <el-dialog v-model="createVisible" title="创建上课记录" width="520px">
+      <el-form ref="createFormRef" :model="cf" :rules="crules" label-width="90px">
+        <el-form-item label="学生" prop="student_id">
+          <el-select v-model="cf.student_id" filterable placeholder="选择学生">
+            <el-option v-for="s in allStudents" :key="s.id" :label="`${s.name} (${s.parent_name})`" :value="s.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="教师" prop="teacher_id">
+          <el-select v-model="cf.teacher_id" filterable placeholder="选择教师">
+            <el-option v-for="t in teachers" :key="t.id" :label="t.real_name" :value="t.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="课程类型" prop="course_type_id">
+          <el-select v-model="cf.course_type_id" placeholder="选择课程">
+            <el-option label="通用" :value="null" />
+            <el-option v-for="c in courseTypes" :key="c.id" :label="c.name" :value="c.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="上课时间" prop="date">
+          <el-date-picker v-model="cf.date" type="datetime" format="YYYY-MM-DD HH:mm" value-format="YYYY-MM-DD HH:mm:ss" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="课时" prop="hours">
+          <el-input-number v-model="cf.hours" :min="0.5" :step="0.5" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="内容">
+          <el-input v-model="cf.content" type="textarea" :rows="2" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createVisible = false">取消</el-button>
+        <el-button type="primary" :loading="creating" @click="handleCreateSave">创建并提交</el-button>
+        <el-button :loading="creating" @click="handleCreateDraft">存为草稿</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -124,8 +163,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { adminApi } from '@/api/admin'
 
-const loading = ref(false), saving = ref(false), exporting = ref(false), editVisible = ref(false)
-const editFormRef = ref<FormInstance>()
+const loading = ref(false), saving = ref(false), creating = ref(false), exporting = ref(false)
+const editVisible = ref(false), createVisible = ref(false)
+const editFormRef = ref<FormInstance>(), createFormRef = ref<FormInstance>()
 const recordList = ref<any[]>([])
 const students = ref<any[]>([])     // 编辑用
 const allStudents = ref<any[]>([])  // 筛选下拉
@@ -137,8 +177,16 @@ const filterStatus = ref(''), filterTeacher = ref(''), filterStudent = ref(''), 
 const editId = ref<number | null>(null)
 
 const ef = reactive({ student_id: null as number | null, course_type_id: null as number | null, date: '', hours: 2, content: '' })
+const cf = reactive({ student_id: null as number | null, teacher_id: null as number | null, course_type_id: null as number | null, date: '', hours: 2, content: '' })
 const erules: FormRules = {
   student_id: [{ required: true, message: '请选择学生', trigger: 'change' }],
+  course_type_id: [{ required: true, message: '请选择课程', trigger: 'change' }],
+  date: [{ required: true, message: '请选择时间', trigger: 'change' }],
+  hours: [{ required: true, message: '请输入课时', trigger: 'blur' }],
+}
+const crules: FormRules = {
+  student_id: [{ required: true, message: '请选择学生', trigger: 'change' }],
+  teacher_id: [{ required: true, message: '请选择教师', trigger: 'change' }],
   course_type_id: [{ required: true, message: '请选择课程', trigger: 'change' }],
   date: [{ required: true, message: '请选择时间', trigger: 'change' }],
   hours: [{ required: true, message: '请输入课时', trigger: 'blur' }],
@@ -249,6 +297,26 @@ async function handleDelete(row: any) {
   ElMessage.success(res.data.msg)
   loadData()
 }
+
+async function openCreate() {
+  cf.student_id = null; cf.teacher_id = null; cf.course_type_id = null
+  cf.date = ''; cf.hours = 2; cf.content = ''
+  createVisible.value = true
+}
+
+async function saveRecord(status: string) {
+  const valid = await createFormRef.value?.validate().catch(() => false)
+  if (!valid) return
+  creating.value = true
+  try {
+    await adminApi.createRecord({ ...cf, status })
+    ElMessage.success(status === 'draft' ? '草稿已保存' : '记录已创建')
+    createVisible.value = false
+    loadData()
+  } finally { creating.value = false }
+}
+function handleCreateSave() { saveRecord('pending') }
+function handleCreateDraft() { saveRecord('draft') }
 
 onMounted(async () => {
   const [tRes, sRes, pRes] = await Promise.all([

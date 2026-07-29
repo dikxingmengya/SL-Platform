@@ -75,6 +75,9 @@ export const adminApi = {
   getRecords(params: any) {
     return request.get('/admin/records', { params })
   },
+  createRecord(data: any) {
+    return request.post('/admin/records', data)
+  },
   updateRecord(id: number, data: any) {
     return request.put(`/admin/records/${id}`, data)
   },
